@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" autoUpload="Always" serverName="Hydra">
+    <serverData>
+      <paths name="Hydra">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/var/www/ui5" local="$PROJECT_DIR$/../HomeControlApp" web="/ui5" />
+            <mapping deploy="/home/gert/domotica" local="$PROJECT_DIR$" web=":8080" />
+          </mappings>
+        </serverdata>
+      </paths>
+    </serverData>
+    <option name="myAutoUpload" value="ALWAYS" />
+  </component>
+</project>
