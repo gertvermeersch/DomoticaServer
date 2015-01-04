@@ -21,6 +21,8 @@ server.listen(port , function(){
     winston.info('%s listening at %s ', server.name , server.url);
 });
 
+interpreter.setCallback(onSerialDataIn);
+
 /*server.opts({path: '/'}, function(oEvent) {
     winston.info(oEvent);
 });*/
@@ -30,6 +32,8 @@ server.post({path: 'living/uplighter/on'}, onUplighterOn);
 server.post({path: 'living/uplighter/off'}, onUplighterOff);
 server.post({path: 'living/twilight/on'}, onTwilightOn);
 server.post({path: 'living/twilight/off'}, onTwilightOff);
+server.get({path: 'living/uplighter'}, onUplighterState);
+server.get({path: 'living/twilight'}, onTwilightState);
 /*server.get({path: 'living/twilight/on'}, onUplighterOn);
 server.get({path: 'living/twilight/off'}, onUplighterOff);
 server.get({path: 'living/twilights/on'}, onUplighterOn);
@@ -38,6 +42,39 @@ server.get({path: 'bedroom/saltlamp/on'}, onUplighterOn);
 server.get({path: 'bedroom/saltlamp/off'}, onUplighterOff);
 server.get({path: 'bedroom/twilight/on'}, onUplighterOn);
 server.get({path: 'bedroom/twilight/off'}, onUplighterOff);*/
+
+function onUplighterState(request, response) {
+    response.writeHead(200, {
+        'Content-Type' : 'application/json'
+    });
+    this.currentResponse = response;
+    interpreter.message("0000", "REQT", "SWST", "2");
+
+
+}
+
+
+function onSerialDataIn(line) {
+    winston.info("serial data: " + line);
+    if(line.indexOf("0000STATSWST20") != -1) {
+        if(this.currentResponse) {
+            this.currentResponse.end(
+                JSON.stringify("{living: {uplighter: off}}")
+            );
+            this.currentResponse = undefined;
+        }
+    }
+    else if (line.indexOf("0000STATSWST21") != -1) {
+        if(this.currentResponse) {
+            this.currentResponse.end(
+                JSON.stringify("{living: {uplighter: on}}")
+            );
+            this.currentResponse = undefined;
+        }
+    }
+
+
+}
 
 function onUplighterOn(request, response) {
     response.writeHead(200, {
