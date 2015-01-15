@@ -1,9 +1,11 @@
 var Interpreter = require('./interpreter.js');
 var restify = require('restify');
 var winston = require('winston');
+var fs = require('fs');
 
 winston.remove(winston.transports.Console);
 winston.add(winston.transports.Console, {'timestamp':true});
+winston.add(winston.transports.File, {filename: "/home/gert/domotica/server.log"});
 
 function RestServer(port) {
     this.states = {
@@ -22,6 +24,8 @@ function RestServer(port) {
     var self = this;
 
     this.server = restify.createServer({
+        key: fs.readFileSync('/etc/nginx/ssl/ssl.key'),
+        certificate: fs.readFileSync('/etc/nginx/ssl/ssl-unified.crt'),
         name: "DomoticaServer"
     });
     /*initialize the serial port */
@@ -34,30 +38,32 @@ function RestServer(port) {
     this.server.use(restify.bodyParser());
 
     this.server.use(restify.authorizationParser());
-    this.server.use(restify.fullResponse());
-
-
-
-    //this.server.use(function authenticate(req, res, next) {
-    //    //console.log(req.authorization.basic);
-    //    if(req.authorization.basic == undefined) {
-    //        res.statusCode = 401;
-    //        res.setHeader('WWW-Authenticate', 'Basic realm="Backend authorization required!"');
-    //        res.end('No credentials found');
-    //    }
-    //    else if(req.authorization.basic.username == "domoticaApp" && req.authorization.basic.password == "D0m0t1c4") {
-    //        return next();
-    //    }
-    //    else {
-    //        res.statusCode = 401;
-    //        res.setHeader('WWW-Authenticate', 'Basic realm="Backend authorization required!"');
-    //        res.end('Wrong credentials found');
-    //        winston.info("Authentication failed");
-    //    }
-    //
-    //});
-
     this.server.use(restify.CORS({origins: ['*'], credentials: true}));
+    this.server.use(restify.fullResponse());
+    restify.CORS.ALLOW_HEADERS.push('authorization'); //allow authorization
+
+
+
+    this.server.use(function authenticate(req, res, next) {
+        //console.log(req.authorization.basic);
+        if(req.authorization.basic == undefined) {
+            res.statusCode = 401;
+            res.setHeader('WWW-Authenticate', 'Basic realm="Backend authorization required!"');
+            res.end('No credentials found');
+        }
+        else if(req.authorization.basic.username == "domoticaApp" && req.authorization.basic.password == "D0m0t1c4") {
+            return next();
+        }
+        else {
+            res.statusCode = 401;
+            res.setHeader('WWW-Authenticate', 'Basic realm="Backend authorization required!"');
+            res.end('Wrong credentials found');
+            winston.info("Authentication failed");
+        }
+
+    });
+
+
 
     //set timeout
     this.server.use(function (req, res, next) {

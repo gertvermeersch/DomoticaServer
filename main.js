@@ -3,5 +3,5 @@
  */
 var RestServer = require("./RESTserver.js");
 
-var port    =  '8080';
+var port    =  '8443';
 serverInstance = new RestServer(port);
