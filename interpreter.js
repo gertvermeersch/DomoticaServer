@@ -74,6 +74,11 @@ Interpreter.prototype.onData = function(line) {
                         break;
                 }
             }
+
+        }
+        else if (param == "TEMP" && source == "wwww") {
+            console.log("temperature = " + value);
+            response.living.temperature = value.substr(0,2);
         }
 
         this.serialCallback();

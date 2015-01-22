@@ -13,7 +13,8 @@ function RestServer(port) {
             uplighter: "",
             twilight: "",
             twilights: "",
-            desklight: ""
+            desklight: "",
+            temperature: ""
         },
         bedroom: {
             saltlamp: "",
@@ -162,9 +163,9 @@ RestServer.prototype.onSerialReady = function(error) {
                         setTimeout(function() {
                             self.interpreter.message("0000", "request", "SWST", "5", self.states);
                             console.log(self.states);
-                            //setInterval(function() {
-                            //    self.interpreter.message("wwww", "request", "TEMP", "", self.states);
-                            //}, 5000);
+                            setInterval(function() {
+                                self.interpreter.message("wwww", "request", "TEMP", "", self.states);
+                            }, 5000);
                         }, 100);
                     }, 100);
                 }, 100);
@@ -187,7 +188,7 @@ RestServer.prototype.onScentOn = function(request, response) {
     response.end();
     winston.info("Scent on command");
     this.interpreter.message("0000", "command", "SWON", "5");
-    this.states.living.Scent = "on";
+    this.states.bedroom.scent = "on";
 }
 
 RestServer.prototype.onScentOff = function(request, response) {
@@ -198,7 +199,7 @@ RestServer.prototype.onScentOff = function(request, response) {
     response.end();
     winston.info("Scent off command");
     this.interpreter.message("0000", "command", "SWOF", "5");
-    this.states.living.Scent = "off"
+    this.states.bedroom.scent = "off"
 }
 
 RestServer.prototype.onDesklightOn = function(request, response) {
