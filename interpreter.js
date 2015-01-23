@@ -21,7 +21,7 @@ function Interpreter() {
 };
 
 Interpreter.prototype.setStates = function(states) {
-    this.states = states;
+    this._states = states;
 }
 
 Interpreter.prototype.onData = function(line) {
@@ -34,7 +34,7 @@ Interpreter.prototype.onData = function(line) {
     var param = line.substr(8,4);
     var value = line.substr(12);
 
-    var response = this.states;
+    var response = this._states;
 
     if(type === "STAT") {
         winston.info("Status update received");
@@ -80,7 +80,8 @@ Interpreter.prototype.onData = function(line) {
             console.log("temperature = " + value);
             response.living.temperature = value.substr(0,2);
         }
-
+        //console.log("interpreter states:");
+        //console.log(this._states);
         this.serialCallback();
 
     }
