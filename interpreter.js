@@ -111,6 +111,7 @@ Interpreter.prototype.message = function(target, command, parameter, value) {
 
 Interpreter.prototype.setCallback = function(callback) {
     this.serialCallback = callback;
+
 }
 
 
