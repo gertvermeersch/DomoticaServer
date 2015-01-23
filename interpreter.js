@@ -99,7 +99,9 @@ Interpreter.prototype.message = function(target, command, parameter, value) {
 
     } else if (command == "request") {
         self.serialBuffer.write("REQT", 4,4);
-    }
+    } else
+        self.serialBuffer.write(command, 4, 4);
+
     self.serialBuffer.write(parameter, 8, 4); //parameter
     self.serialBuffer.write(value, 12); //value, undefined length, message length = max 28 (32 - address)
 
