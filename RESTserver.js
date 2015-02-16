@@ -1,14 +1,21 @@
-var Interpreter = require('./interpreter.js');
+var Interpreter = require('./util/interpreter.js');
 var restify = require('restify');
-var winston = require('winston');
+var logger = require('winston');
 var fs = require('fs');
 
-winston.remove(winston.transports.Console);
-winston.add(winston.transports.Console, {'timestamp':true});
-winston.add(winston.transports.File, {filename: "/home/gert/domotica/server.log"});
 
-function RestServer(port) {
+var logger = new (winston.Logger)({
+    transports: [
+      new (winston.transports.Console)({timestamp:true}),
+      new (winston.transports.File)({ filename: '/home/gert/domotica/server.log' })
+    ]
+  });
 
+function RestServer(port, interpreter, climateController, config, states) {
+	this._config = config;
+	this._climateController = climateController;
+	this._states = states;
+	this._interpreter = interpreter;
     this.currentResponses = [];
     var self = this;
 
@@ -17,11 +24,8 @@ function RestServer(port) {
         certificate: fs.readFileSync('/etc/nginx/ssl/ssl-unified.crt'),
         name: "DomoticaServer"
     });
-    /*initialize the serial port */
-    this.interpreter = new Interpreter();
-    this.interpreter.serialPort.on('open', function(error) {self.onSerialReady(error)});
-    /*initialize the server */
-
+    
+    
 
     this.server.use(restify.queryParser());
     this.server.use(restify.bodyParser());
@@ -47,7 +51,7 @@ function RestServer(port) {
             res.statusCode = 401;
             res.setHeader('WWW-Authenticate', 'Basic realm="Backend authorization required!"');
             res.end('Wrong credentials found');
-            winston.info("Authentication failed");
+            logger.info("Authentication failed");
         }
 
     });
@@ -63,11 +67,11 @@ function RestServer(port) {
     });
 
     this.server.listen(port, function () {
-        winston.info('%s listening at %s ',self.server.name, self.server.url);
+        logger.info('%s listening at %s ',self.server.name, self.server.url);
 
     });
 
-    this.interpreter.setCallback(function() {
+    this._interpreter.addCallback(function() {
         self.onSerialDataIn();
     });
 
@@ -75,9 +79,13 @@ function RestServer(port) {
 
     //this.server.get({path: '[\/a-z0-9]+'}, function(req, res) {
 
-    this.server.get({path: '/'}, function(req, res) {
+    this.server.get({path: '/states'}, function(req, res) {
         self.onGetRequest(req, res);
     });
+    
+    this.server.get({path: '/heating'}, function(req, res) {
+    	res.end(JSON.stringify(self._climateController.getConfig()));
+    })
 
     this.server.post({path: '[\/a-z0-9]+'}, function(req, res, next) {
         self.onPost(req, res, next);
@@ -87,7 +95,6 @@ function RestServer(port) {
 
 RestServer.prototype.setStates = function(states) {
     this._states = states;
-    this.interpreter.setStates(this._states);
 }
 
 RestServer.prototype.setConfig = function(config) {
@@ -100,7 +107,7 @@ RestServer.prototype.onPost = function(req, res, next) {
     for (var i in this._config) {
         var item = this._config[i];
         if (item.path == req.url) {
-            this.interpreter.message(item.message.address, item.message.type, item.message.parameter, item.message.value);
+            this._interpreter.message(item.message.address, item.message.type, item.message.parameter, item.message.value);
             //set state
             this._states[item.room][item.device] = item.state;
             res.writeHead(200, {
@@ -119,46 +126,10 @@ RestServer.prototype.onPost = function(req, res, next) {
 }
 
 
-RestServer.prototype.onSerialReady = function(error) {
-    var self = this;
-    if ( error ) {
-        winston.error('failed to open: ' + error);
-    } else {
 
-        winston.info('opened serial connection to micro controller');
-        //refresh _states
-        self.interpreter.message("wwww", "request", "TEMP", "", self._states);
-        setTimeout(function() {
-            self.interpreter.message("0000", "request", "SWST", "0", self._states);
-            setTimeout(function () {
-                self.interpreter.message("0000", "request", "SWST", "1", self._states);
-                setTimeout(function () {
-                    self.interpreter.message("0000", "request", "SWST", "2", self._states);
-                    setTimeout(function () {
-                        self.interpreter.message("0000", "request", "SWST", "3", self._states);
-                        setTimeout(function () {
-                            self.interpreter.message("0000", "request", "SWST", "4", self._states);
-                            setTimeout(function () {
-                                self.interpreter.message("0000", "request", "SWST", "5", self._states);
-                                console.log(self._states);
-                                setInterval(function () {
-                                    self.interpreter.message("wwww", "request", "TEMP", "", self._states);
-                                }, 60000);
-                            }, 100);
-                        }, 100);
-                    }, 100);
-                }, 100);
-            }, 100);
-        }, 100);
-
-
-    }
-}
 
 RestServer.prototype.onSerialDataIn = function () {
-    //console.log("restserver states:");
-    //console.log(this._states);
-    winston.log("update received: " + this._states);
+    logger.info("State update received: " + JSON.stringify(this._states));
 }
 
 
@@ -166,21 +137,21 @@ RestServer.prototype.onGetRequest = function(request, response) {
     var self = this;
     response.statusCode = 200;
     response.on('close', (function() {
-        winston.error("Response was closed before end was sent");
+        logger.error("Response was closed before end was sent");
         for(i = 0; i < self.currentResponses.length; i++) {
             if(self.currentResponses[i] === this) {
                 self.currentResponses.splice(i, 1);
-                winston.error("Response removed from the stack");
+                logger.error("Response removed from the stack");
             }
         }
 
     }));
 
     response.on('finish',(function() {
-        winston.info("Response was normally ended");
+        logger.info("Response was normally ended");
     }));
 
-    winston.info("Request received from " + request.socket.remoteAddress + " with accept: " + request.headers.accept);
+    logger.info("Request received from " + request.socket.remoteAddress + " with accept: " + request.headers.accept);
     if(request.headers.accept.indexOf("application/json") != -1 || request.headers.accept.indexOf("*/*") != -1) {
         response.end(JSON.stringify(this._states));
     }

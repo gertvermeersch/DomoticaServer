@@ -2,6 +2,8 @@
  * Created by GeVr on 4/01/2015.
  */
 var RestServer = require("./RESTserver.js");
+var Interpreter = require('./util/interpreter.js');
+var ClimateController = require('./util/ClimateController.js');
 
 var config = [
     {   description: "Turn twilight on",
@@ -58,7 +60,7 @@ var config = [
             address: "0000",
             type: "command",
             parameter: "SWON",
-            value: "0"
+            value: "3"
         },
         room: "living",
         device: "desklight",
@@ -70,7 +72,7 @@ var config = [
             address: "0000",
             type: "command",
             parameter: "SWOF",
-            value: "0"
+            value: "3"
         },
         room: "living",
         device: "desklight",
@@ -84,7 +86,7 @@ var config = [
             parameter: "SWON",
             value: "4"
         },
-        room: "living",
+        room: "bedroom",
         device: "saltlamp",
         state : "on"
     },
@@ -96,7 +98,7 @@ var config = [
             parameter: "SWOF",
             value: "4"
         },
-        room: "living",
+        room: "bedroom",
         device: "saltlamp",
         state : "off"
     },
@@ -130,7 +132,7 @@ var config = [
             address: "0000",
             type: "command",
             parameter: "SWON",
-            value: "3"
+            value: "0"
         },
         room: "living",
         device: "twilights",
@@ -142,7 +144,7 @@ var config = [
             address: "0000",
             type: "command",
             parameter: "SWOF",
-            value: "3"
+            value: "0"
         },
         room: "living",
         device: "twilights",
@@ -154,18 +156,32 @@ var config = [
 ];
 
 var port    =  '8443';
-serverInstance = new RestServer(port);
-serverInstance.setConfig(config);
-serverInstance.setStates({
-    living: {
-        uplighter: "",
-        twilight: "",
-        twilights: "",
-        desklight: "",
-        temperature: ""
-    },
-    bedroom: {
-        saltlamp: "",
-        scent: ""
-    }
-});
+var states =  { //share states between interpreter and server
+	    living: {
+	        uplighter: "",
+	        twilight: "",
+	        twilights: "",
+	        desklight: "",
+	        
+	    },
+	    bedroom: {
+	        saltlamp: "",
+	        scent: ""
+	    },
+		shut_off: false,
+		at_home: false,
+		target_temperature: 0,
+		temperature: "",
+		humidity: "",
+		heating_state:false
+	}; 
+
+
+/*initialize the serial port */
+var _interpreter = new Interpreter(states);
+var _climateController = new ClimateController();
+
+/*initialize the server */
+
+serverInstance = new RestServer(port, _interpreter, _climateController, config, states);
+
