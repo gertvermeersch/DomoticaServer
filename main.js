@@ -16,7 +16,7 @@ var config = [
         },
         room: "living",
         device: "twilight",
-        state : "on"
+        state : true
     },
     {   description: "Turn twilight off",
         path: "/living/twilight/off",
@@ -28,7 +28,7 @@ var config = [
         },
         room: "living",
         device: "twilight",
-        state : "off"
+        state : false
     },
     {   description: "Turn scent on",
         path: "/bedroom/scent/on",
@@ -40,7 +40,7 @@ var config = [
         },
         room: "bedroom",
         device: "scent",
-        state : "on"
+        state : true
     },
     {   description: "Turn scent off",
         path: "/bedroom/scent/off",
@@ -52,7 +52,7 @@ var config = [
         },
         room: "bedroom",
         device: "scent",
-        state : "off"
+        state : false
     },
     {   description: "Turn desk light on",
         path: "/living/desklight/on",
@@ -64,7 +64,7 @@ var config = [
         },
         room: "living",
         device: "desklight",
-        state : "on"
+        state : true
     },
     {   description: "Turn desklight off",
         path: "/living/desklight/off",
@@ -76,7 +76,7 @@ var config = [
         },
         room: "living",
         device: "desklight",
-        state : "off"
+        state : false
     },
     {   description: "Turn salt lamp on",
         path: "/bedroom/saltlamp/on",
@@ -88,7 +88,7 @@ var config = [
         },
         room: "bedroom",
         device: "saltlamp",
-        state : "on"
+        state : true
     },
     {   description: "Turn salt lamp off",
         path: "/bedroom/saltlamp/off",
@@ -100,7 +100,7 @@ var config = [
         },
         room: "bedroom",
         device: "saltlamp",
-        state : "off"
+        state : false
     },
     {   description: "Turn uplighter on",
         path: "/living/uplighter/on",
@@ -112,7 +112,7 @@ var config = [
         },
         room: "living",
         device: "uplighter",
-        state : "on"
+        state : true
     },
     {   description: "Turn uplighter off",
         path: "/living/uplighter/off",
@@ -124,7 +124,7 @@ var config = [
         },
         room: "living",
         device: "uplighter",
-        state : "off"
+        state : false
     },
     {   description: "Turn twilights on",
         path: "/living/twilights/on",
@@ -136,7 +136,7 @@ var config = [
         },
         room: "living",
         device: "twilights",
-        state : "on"
+        state : true
     },
     {   description: "Turn twilights off",
         path: "/living/twilights/off",
@@ -148,7 +148,7 @@ var config = [
         },
         room: "living",
         device: "twilights",
-        state : "off"
+        state : false
     },
 
 
@@ -156,30 +156,31 @@ var config = [
 ];
 
 var port    =  '8443';
+var serialPortDevice = '/dev/ttyAMA0';
 var states =  { //share states between interpreter and server
 	    living: {
-	        uplighter: "",
-	        twilight: "",
-	        twilights: "",
-	        desklight: "",
+	        uplighter: false,
+	        twilight: false,
+	        twilights: false,
+	        desklight: false
 	        
 	    },
 	    bedroom: {
-	        saltlamp: "",
-	        scent: ""
+	        saltlamp: false,
+	        scent: false
 	    },
 		shut_off: false,
 		at_home: false,
 		target_temperature: 0,
-		temperature: "",
-		humidity: "",
+		temperature: 0,
+		humidity: 0,
 		heating_state:false
 	}; 
 
 
 /*initialize the serial port */
-var _interpreter = new Interpreter(states);
-var _climateController = new ClimateController();
+var _interpreter = new Interpreter(serialPortDevice, states);
+var _climateController = new ClimateController(_interpreter, states);
 
 /*initialize the server */
 

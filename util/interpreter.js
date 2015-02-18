@@ -7,17 +7,41 @@ serialport = require("serialport");
 
 var logger = new (winston.Logger)({
     transports: [
-      new (winston.transports.Console)({timestamp:true}),
-      new (winston.transports.File)({ filename: '/home/gert/domotica/climate_control.log' })
-    ]
-  });
+        new (winston.transports.Console)({timestamp:true, prettyPrint:true, colorize: true, level: 'trace'}),
+        new (winston.transports.File)({ filename: '/home/gert/domotica/serial.log' })
+    ],
+    levels: {
+        trace: 0,
+        input: 1,
+        verbose: 2,
+        prompt: 3,
+        debug: 4,
+        info: 5,
+        data: 6,
+        help: 7,
+        warn: 8,
+        error: 9
+    },
+    colors: {
+        trace: 'magenta',
+        input: 'grey',
+        verbose: 'cyan',
+        prompt: 'grey',
+        debug: 'blue',
+        info: 'green',
+        data: 'grey',
+        help: 'cyan',
+        warn: 'yellow',
+        error: 'red'
+    }
+});
 
 
-function Interpreter(_states) {
+function Interpreter(serialPortDevice, _states) {
 	this._callbacks = new Array();
 	this._states = _states;
     var self = this;
-    self.serialPort = new SerialPort("/dev/ttyAMA0", {
+    self.serialPort = new SerialPort(serialPortDevice, {
         baudrate: 115200,
         parser: serialport.parsers.readline("\r")
     }, true); // this is the openImmediately flag [default is true]
@@ -57,17 +81,17 @@ Interpreter.prototype.onSerialReady = function(error) {
                                 	setInterval(function() {
                                 		self.message("wwww", "request", "HUMY", "");
                                 	}, 60000);
-                                },1000);
+                                },2000);
                                 setTimeout(function() {
                                 	setInterval(function() {
                                 		self.message("wwww", "request", "TTMP", "");
                                 	}, 60000);
-                                },2000);
+                                },4000);
                                 setTimeout(function() {
                                 	setInterval(function() {
                                 		self.message("wwww", "request", "HEAT", "");
                                 	}, 60000);
-                                },3000);
+                                },6000);
                                 
                             }, 1000);
                         }, 1000);
@@ -102,7 +126,7 @@ Interpreter.prototype.onData = function(line) {
            //logger.info("from RF433Mhz");
             if(param === "SWST" ) {
              //   logger.info("Switch state");
-                var state = (value.substr(1,1) === "1")?"on":"off";
+                var state = (value.substr(1,1) === "1")?true:false;
                // logger.info("state: " + state);
                 switch(value.substr(0,1)) {
                     case "1":
@@ -137,20 +161,21 @@ Interpreter.prototype.onData = function(line) {
 
         }
         else if (param == "TEMP" && source == "wwww") {
-            console.log("temperature = " + value);
+
             response.temperature = value.substr(0,2);
+            logger.debug("temperature = " + response.temperature);
         }
         else if (param == "HUMY" && source == "wwww") {
-            console.log("humidity = " + value);
             response.humidity = value.substr(0,2);
+            logger.debug("humidity = " + response.humidity);
         }
         else if (param == "TTMP" && source == "wwww") {
-            console.log("target temperature = " + value);
             response.target_temperature = value.substr(0,2);
+            logger.debug("target temperature = " + response.target_temperature);
         }
         else if (param == "HEAT" && source == "wwww") {
-            console.log("target temperature = " + value);
             response.heating_state = value.substr(0,1) == "1"?true:false;
+            logger.debug("heating state = " + response.heating_state);
         }
         //console.log("interpreter states:");
         logger.info(JSON.stringify(this._states));
@@ -172,6 +197,8 @@ Interpreter.prototype.message = function(target, command, parameter, value) {
 
     } else if (command == "request") {
         self.serialBuffer.write("REQT", 4,4);
+    } else if (command == "setvalue") {
+        self.serialBuffer.write("SETV", 4,4);
     } else
         self.serialBuffer.write(command, 4, 4);
 

@@ -6,10 +6,34 @@ var fs = require('fs');
 
 var logger = new (winston.Logger)({
     transports: [
-      new (winston.transports.Console)({timestamp:true}),
-      new (winston.transports.File)({ filename: '/home/gert/domotica/server.log' })
-    ]
-  });
+        new (winston.transports.Console)({timestamp:true, prettyPrint:true, colorize: true, level: 'trace'}),
+        new (winston.transports.File)({ filename: '/home/gert/domotica/server.log' })
+    ],
+    levels: {
+        trace: 0,
+        input: 1,
+        verbose: 2,
+        prompt: 3,
+        debug: 4,
+        info: 5,
+        data: 6,
+        help: 7,
+        warn: 8,
+        error: 9
+    },
+    colors: {
+        trace: 'magenta',
+        input: 'grey',
+        verbose: 'cyan',
+        prompt: 'grey',
+        debug: 'blue',
+        info: 'green',
+        data: 'grey',
+        help: 'cyan',
+        warn: 'yellow',
+        error: 'red'
+    }
+});
 
 function RestServer(port, interpreter, climateController, config, states) {
 	this._config = config;
@@ -18,6 +42,9 @@ function RestServer(port, interpreter, climateController, config, states) {
 	this._interpreter = interpreter;
     this.currentResponses = [];
     var self = this;
+
+
+
 
     this.server = restify.createServer({
         key: fs.readFileSync('/etc/nginx/ssl/ssl.key'),
@@ -73,6 +100,7 @@ function RestServer(port, interpreter, climateController, config, states) {
 
     this._interpreter.addCallback(function() {
         self.onSerialDataIn();
+
     });
 
     //Register callbacks
@@ -85,7 +113,21 @@ function RestServer(port, interpreter, climateController, config, states) {
     
     this.server.get({path: '/heating'}, function(req, res) {
     	res.end(JSON.stringify(self._climateController.getConfig()));
-    })
+    });
+
+    this.server.post({path: '/heating'}, function(req, res) {
+        self._climateController.updateConfig(req.body, function(error) {
+            if(error) {
+                res.statusCode = 500; //internal server error
+                res.end(JSON.stringify(
+                    {result: "error", error: error.message}));
+            }else {
+                res.statusCode = 201; //Created
+                res.end(JSON.stringify({result: "ok"}));
+            }
+        })
+    });
+
 
     this.server.post({path: '[\/a-z0-9]+'}, function(req, res, next) {
         self.onPost(req, res, next);

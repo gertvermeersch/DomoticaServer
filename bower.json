@@ -1,0 +1,20 @@
+{
+  "name": "DomoticaServer",
+  "version": "1.0",
+  "description": "Node.js backend for home automation project. Links between Javascript front-end and serial device (Arduino)",
+  "main": "main.js",
+  "moduleType": [
+    "node"
+  ],
+  "authors": [
+    "Gert Vermeersch"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
