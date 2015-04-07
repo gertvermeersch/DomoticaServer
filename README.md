@@ -1,3 +1,5 @@
+This repository is deprecated. The code is stable but I created a new version 'domotica-service' that is better structured and more reusable. This code was merely a prototype. Please refer to the new version if you are looking for a reusable REST - Serial bridge for you home automation project
+
 # DomoticaServer
 Node.js server for REST api to control my home automation project
 
